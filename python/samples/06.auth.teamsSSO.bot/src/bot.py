@@ -83,7 +83,7 @@ async def on_sign_in_success(
 ):
     await context.send_activity("successfully logged in!")
     await context.send_activity(f"token string length: {len(state.temp.auth_tokens['graph'])}")
-    await context.send_activity(f"This is what you said before the AuthFlow started: {context.activity.text}");
+    await context.send_activity(f"This is what you said before the AuthFlow started: {context.activity.text}")
 
 @auth.on_sign_in_failure
 async def on_sign_in_failure(
