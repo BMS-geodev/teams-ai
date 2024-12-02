@@ -18,6 +18,9 @@ from typing import (
     Union,
     cast,
 )
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 from aiohttp.web import Request, Response
 from botbuilder.core import Bot, TurnContext
@@ -113,6 +116,7 @@ class Application(Bot, Generic[StateT]):
                 if isinstance(opts, OAuthOptions):
                     self._auth.set(name, OAuth[StateT](opts))
                 if isinstance(opts, SsoOptions):
+                    logger.info(f"Setting SsoAuth with name: {name}")
                     self._auth.set(name, SsoAuth[StateT](name=name, options=opts))
 
     @property
@@ -743,36 +747,51 @@ class Application(Bot, Generic[StateT]):
 
     async def _on_turn(self, context: TurnContext):
         try:
+            logger.info("Starting _on_turn method")
             await self._start_typing(context)
 
             self._remove_mentions(context)
 
             state = await self._initialize_state(context)
+            logger.info(f"State initialized with {state}")
 
             if not await self._authenticate_user(context, state):
+                logger.warning("User authentication failed in _on_turn")
                 return
 
             if not await self._run_before_turn_middleware(context, state):
+                logger.info("Before turn middleware stopped execution")
                 return
 
             await self._handle_file_downloads(context, state)
 
             is_ok, matches = await self._on_activity(context, state)
+            logger.info(f"Activity handled with {matches} matches")
+
             if not is_ok:
                 await state.save(context, self._options.storage)
+                logger.info("State saved after handling activity")
                 return
+
             if matches == 0:
                 if not await self._run_ai_chain(context, state):
+                    logger.info("AI chain execution stopped")
                     return
 
             if not await self._run_after_turn_middleware(context, state):
+                logger.info("After turn middleware stopped execution")
                 return
 
             await state.save(context, self._options.storage)
+            logger.info("State saved successfully at end of _on_turn")
+
         except ApplicationError as err:
             await self._on_error(context, err)
+            logger.error(f"Error occurred in _on_turn: {err}")
+
         finally:
             self.typing.stop()
+            logger.info("Typing stopped at end of _on_turn")
 
     async def _start_typing(self, context: TurnContext):
         if self._options.start_typing_timer:
@@ -793,28 +812,37 @@ class Application(Bot, Generic[StateT]):
         return state
 
     async def _authenticate_user(self, context: TurnContext, state):
+        logger.info("Starting _authenticate_user method")
+        
         if self.options.auth and self._auth:
             auth_condition = (
                 isinstance(self.options.auth.auto, bool) and self.options.auth.auto
             ) or (callable(self.options.auth.auto) and self.options.auth.auto(context))
+            logger.info(f"Auth condition: {auth_condition}")
             user_in_sign_in = IN_SIGN_IN_KEY in state.user
+            logger.info(f"User in sign in: {user_in_sign_in}")
             if auth_condition or user_in_sign_in:
                 key: Optional[str] = state.user.get(IN_SIGN_IN_KEY, self.options.auth.default)
-
+                logger.info(f"Key: {key}")
                 if key is not None:
                     state.user[IN_SIGN_IN_KEY] = key
                     res = await self._auth.sign_in(context, state, key=key)
+                    logger.info(f"Sign in response: {res}")
                     if res.status == "complete":
                         del state.user[IN_SIGN_IN_KEY]
-
+                        logger.info("Authentication complete in _authenticate_user")
+                    
                     if res.status == "pending":
                         await state.save(context, self._options.storage)
+                        logger.info("Authentication pending; state saved")
                         return False
 
                     if res.status == "error" and res.reason != "invalid-activity":
                         del state.user[IN_SIGN_IN_KEY]
+                        logger.error(f"Authentication error: [{res.reason}] {res.message}")
                         raise ApplicationError(f"[{res.reason}] => {res.message}")
 
+        logger.info("_authenticate_user completed successfully")
         return True
 
     async def _run_before_turn_middleware(self, context: TurnContext, state):

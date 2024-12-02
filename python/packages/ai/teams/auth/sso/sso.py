@@ -8,6 +8,10 @@ from __future__ import annotations
 from datetime import datetime
 from typing import List, Optional, TypeVar, cast
 
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 from botbuilder.core import TurnContext
 from botbuilder.schema import Activity, TokenResponse
 from msal import ConfidentialClientApplication
@@ -49,6 +53,7 @@ class SsoAuth(Auth[StateT]):
         return False
 
     async def sign_in(self, context: TurnContext, state: StateT) -> Optional[str]:
+        logger.info(f"sso.py sign_in: ")
         token = await self.get_token(context)
 
         if token:
@@ -77,16 +82,18 @@ class SsoAuth(Auth[StateT]):
         return
 
     async def get_token(self, context: TurnContext) -> Optional[str]:
+        logger.info(f"sso.py get_token")
         aad_object_id = cast(str, getattr(context.activity.from_property, "aad_object_id"))
-
+        logger.info(f"aad_object_id: {aad_object_id}")
         if aad_object_id:
             accounts = self._msal.get_accounts()
-
+            logger.info(f"accounts: {accounts}")
             for account in accounts:
                 if account["local_account_id"] == aad_object_id:
                     token_result = self._msal.acquire_token_silent(
                         scopes=self._options.scopes, account=account
                     )
+                    logger.info(f"token_result: {token_result}")
                     if token_result is not None:
                         return token_result.get("access_token")
         return None

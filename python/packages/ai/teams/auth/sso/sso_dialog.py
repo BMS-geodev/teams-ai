@@ -7,6 +7,10 @@ from __future__ import annotations
 
 from typing import Generic, Optional, TypeVar, cast
 
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 from botbuilder.core import TurnContext
 from botbuilder.dialogs import (
     DialogTurnResult,
@@ -32,6 +36,7 @@ class SsoDialog(Generic[StateT], Dialog[StateT], AuthComponent[StateT]):
     "handles dialog sso authentication"
 
     def __init__(self, name: str, options: SsoOptions, msal: ConfidentialClientApplication) -> None:
+        logger.info(f"init SsoDialog: {name}")
         super().__init__(SsoDialog.__name__)
         self.add_dialog(SsoPrompt("TeamsSsoPrompt", name, options, msal))
         self.add_dialog(
@@ -45,6 +50,7 @@ class SsoDialog(Generic[StateT], Dialog[StateT], AuthComponent[StateT]):
         self.initial_dialog_id = SSO_DIALOG_ID
 
     def is_sign_in_activity(self, activity: Activity) -> bool:
+        logger.info(f"is_sign_in_activity: {activity.type} , {activity.text} , {ActivityTypes.message}")
         return (
             activity.type == ActivityTypes.message
             and activity.text is not None
@@ -52,8 +58,9 @@ class SsoDialog(Generic[StateT], Dialog[StateT], AuthComponent[StateT]):
         )
 
     async def sign_in(self, context: TurnContext, state: StateT) -> Optional[str]:
+        logger.info(f"sign_in")
         res = await self.run_dialog(context, state)
-
+        logger.info(f"sign_in res: {res.__dict__}")
         if res.status == DialogTurnStatus.Complete:
             await self.sign_out(context, state)
 

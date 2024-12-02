@@ -5,6 +5,10 @@ Licensed under the MIT License.
 
 from typing import Generic, Optional, TypeVar, cast
 
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 from botbuilder.core import TurnContext
 from botbuilder.dialogs import (
     ComponentDialog,
@@ -55,7 +59,7 @@ class Dialog(ComponentDialog, Generic[StateT]):
         """
         ctx = await self.create_dialog_context(context, state)
         res = await ctx.continue_dialog()
-
+        logger.info(f"run_dialog: {res.__dict__}")
         if res.status == DialogTurnStatus.Empty:
             res = await ctx.begin_dialog(self.initial_dialog_id or "default", options)
 
