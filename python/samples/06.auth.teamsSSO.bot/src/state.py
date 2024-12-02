@@ -18,7 +18,7 @@ class AppConversationState(ConversationState):
     @classmethod
     async def load(cls, context: TurnContext, storage: Optional[Storage] = None) -> "AppConversationState":
         state = await super().load(context, storage)
-        logger.info("Loaded AppConversationState")
+        # logger.info("Loaded AppConversationState")
         return cls(**state)
 
 
@@ -27,11 +27,11 @@ class AppTurnState(TurnState[AppConversationState, UserState, TempState]):
 
     @classmethod
     async def load(cls, context: TurnContext, storage: Optional[Storage] = None) -> "AppTurnState":
-        if "app_turn_state" in context.turn_state:
-            logger.info("Using cached AppTurnState")
-            return cast(AppTurnState, context.turn_state["app_turn_state"])
+        # if "app_turn_state" in context.turn_state:
+        #     logger.info("Using cached AppTurnState")
+        #     return cast(AppTurnState, context.turn_state["app_turn_state"])
 
-        logger.info("Loading AppTurnState components")
+        # logger.info("Loading AppTurnState components")
 
         conversation_state = await AppConversationState.load(context, storage)
         user_state = await UserState.load(context, storage)
@@ -44,7 +44,7 @@ class AppTurnState(TurnState[AppConversationState, UserState, TempState]):
         )
         
         # Cache the loaded turn state in context to prevent re-loading within the same turn
-        context.turn_state["app_turn_state"] = turn_state
+        # context.turn_state["app_turn_state"] = turn_state
         
-        logger.info("AppTurnState fully loaded")
+        # logger.info("AppTurnState fully loaded")
         return turn_state

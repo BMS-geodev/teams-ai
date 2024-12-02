@@ -51,9 +51,9 @@ auth = app.auth.get("graph")
 
 @app.turn_state_factory
 async def turn_state_factory(context: TurnContext):
-    logger.info("Initializing turn state")
+    # logger.info("Initializing turn state")
     turn_state = await AppTurnState.load(context, storage)
-    logger.info("Turn state initialized successfully")
+    # logger.info("Turn state initialized successfully")
     return turn_state
 
 @app.message("/reset")
@@ -82,12 +82,13 @@ async def on_message(
     curr_count = state.conversation.count
     state.conversation.count = curr_count + 1
 
-    if "graph" in state.temp.auth_tokens:
-        logger.info(f"Auth token found {state.temp.auth_tokens['graph']}")
-    # if "graph" not in state.temp.auth_tokens:
-    #     logger.warning("Auth token not found, prompting for sign-in")
-    #     await context.send_activity(f"Please sign in to continue: [Sign in]({config.BOT_DOMAIN}/auth-start.html)")
-    #     return True
+    logger.info(f"state.temp! {state.temp}")
+    # if "graph" in state.temp.auth_tokens:
+    #     logger.info(f"Auth token found {state.temp.auth_tokens['graph']}")
+    if "graph" not in state.temp.auth_tokens:
+        logger.warning("Auth token not found, prompting for sign-in")
+        await context.send_activity(f"Please sign in to continue: [Sign in]({config.BOT_DOMAIN}/auth-start.html)")
+        return True
 
     await context.send_activity(f"you said: {context.activity.text}")
     return False
